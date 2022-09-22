@@ -4,6 +4,7 @@ import net.sacredlabyrinth.phaed.dynmap.simpleclans.layers.LayerConfig;
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
 import org.bukkit.ChatColor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,7 +34,10 @@ public final class Helper {
      *
      * @return colored html {@literal <span>}
      */
-    public static String colorToHTML(@NotNull String string) {
+    public static String colorToHTML(@Nullable String string) {
+        if (string == null) {
+            return "";
+        }
         string = string.trim().replace("|", "<br>");
         Matcher matcher = COLOR_CODE.matcher(string);
         StringBuffer sb = new StringBuffer();
