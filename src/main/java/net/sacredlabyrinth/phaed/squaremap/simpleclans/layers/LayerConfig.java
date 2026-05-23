@@ -1,4 +1,4 @@
-package net.sacredlabyrinth.phaed.dynmap.simpleclans.layers;
+package net.sacredlabyrinth.phaed.squaremap.simpleclans.layers;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.util.NumberConversions;
@@ -18,15 +18,15 @@ public class LayerConfig {
         return section.getStringList(key);
     }
 
-    public @NotNull Double getDouble(@NotNull String key, double def) {
+    public double getDouble(@NotNull String key, double def) {
         return section.getDouble(key, def);
     }
 
-    public @NotNull Integer getInt(@NotNull LayerField setting) {
+    public int getInt(@NotNull LayerField setting) {
         return section.getInt(setting.path, NumberConversions.toInt(setting.def));
     }
 
-    public @NotNull Integer getInt(@NotNull String key, int def) {
+    public int getInt(@NotNull String key, int def) {
         return section.getInt(key, def);
     }
 
@@ -38,20 +38,15 @@ public class LayerConfig {
         return section.getString(key, def);
     }
 
-    public @NotNull Boolean getBoolean(@NotNull LayerField setting) {
+    public boolean getBoolean(@NotNull LayerField setting) {
         return section.getBoolean(setting.path, (Boolean) setting.def);
     }
 
-    public @NotNull Boolean getBoolean(@NotNull String key, boolean def) {
+    public boolean getBoolean(@NotNull String key, boolean def) {
         return section.getBoolean(key, def);
     }
 
-
-    /**
-     * Represents the enum of <b>general</b> {@link Layer}'s fields
-     */
     public enum LayerField {
-
         ENABLE("enable", true),
         PRIORITY("layer-priority", 1),
         LABEL("label", "Label"),
@@ -59,8 +54,8 @@ public class LayerConfig {
         HIDDEN("hide-by-default", false),
         MINZOOM("min-zoom", 0);
 
-        private final String path;
-        private final Object def;
+        final String path;
+        final Object def;
 
         LayerField(String path, Object def) {
             this.path = path;

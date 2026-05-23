@@ -1,24 +1,29 @@
 name: ${project.name}
-main: net.sacredlabyrinth.phaed.dynmap.simpleclans.DynmapSimpleClans
+main: net.sacredlabyrinth.phaed.squaremap.simpleclans.SquaremapSimpleClans
 version: ${project.version}
 website: ${project.url}
 author: phaed
 authors:
   - RoinujNosde
   - Minat0_
+api-version: "1.20"
 depend:
-  - dynmap
+  - squaremap
   - SimpleClans
 commands:
   clanmap:
-    description: Map commands
-    usage: Syntax error, verify the command usage on /<command> help
+    description: squaremap-SimpleClans map commands
+    usage: /<command> help
 permissions:
   simpleclans.map.reload:
     description: Can reload the plugin
+    default: op
   simpleclans.map.list:
-    description: Can retrieve the list of icons
+    description: Can list available icons
+    default: op
   simpleclans.map.icon.bypass:
-    description: Can use all icons
+    description: Can use any icon regardless of per-icon permission
+    default: op
   simpleclans.map.seticon:
-    description: Can set an icon
+    description: Can set the clan's map icon
+    default: true
