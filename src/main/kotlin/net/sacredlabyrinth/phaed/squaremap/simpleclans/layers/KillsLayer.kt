@@ -49,7 +49,7 @@ class KillsLayer(
         // Auto-expire the marker after visible-seconds
         val visibleTicks = config.getInt("visible-seconds", 300) * 20L
         object : BukkitRunnable() {
-            override fun run() = provider.removeMarker(uniqueKey)
+            override fun run() { provider.removeMarker(uniqueKey) }
         }.runTaskLater(SquaremapSimpleClans.getInstance(), visibleTicks)
     }
 
