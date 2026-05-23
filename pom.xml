@@ -214,14 +214,25 @@
         </dependency>
     </dependencies>
 
-    <!-- All provided dependencies are pre-installed in the local Maven repository as stubs.
-         Maven Central supplies everything else (kotlin-stdlib, gson, junit, etc.).
-         The original third-party repos (papermc, jpenilla, roinujnosde) are intentionally
-         omitted to avoid network timeouts in environments with restricted outbound access. -->
     <repositories>
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <!-- Paper API + transitive deps (bungeecord-chat, etc.) -->
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+        <!-- squaremap-api -->
+        <repository>
+            <id>jpenilla-releases</id>
+            <url>https://repo.jpenilla.xyz/releases</url>
+        </repository>
+        <!-- SimpleClans snapshots -->
+        <repository>
+            <id>roinujnosde-repo-snapshots</id>
+            <url>https://repo.roinujnosde.me/snapshots</url>
         </repository>
     </repositories>
 </project>
