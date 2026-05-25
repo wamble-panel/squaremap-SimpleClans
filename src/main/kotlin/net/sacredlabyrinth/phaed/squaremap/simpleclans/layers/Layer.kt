@@ -36,9 +36,9 @@ abstract class Layer(
         providers.clear()
     }
 
-    protected fun key(): Key = Key.of(NAMESPACE, layerKey)
+    protected fun key(): Key = Key.of("${NAMESPACE}_$layerKey")
 
-    protected fun markerKey(id: String): Key = Key.of(NAMESPACE, "${layerKey}_$id")
+    protected fun markerKey(id: String): Key = Key.of("${NAMESPACE}_${layerKey}_$id")
 
     /** Returns the SimpleLayerProvider for the given Bukkit World, or null if not registered. */
     protected fun providerFor(world: World): SimpleLayerProvider? =

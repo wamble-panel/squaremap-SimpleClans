@@ -65,9 +65,9 @@ public class IconStorage {
     /** Returns the squaremap Key for the given icon name, or the default if not found. */
     public @NotNull Key getIconKey(@Nullable String iconName) {
         if (iconName != null && registeredIconNames.contains(iconName.toLowerCase())) {
-            return Key.of(NAMESPACE,iconName.toLowerCase());
+            return Key.of(NAMESPACE + "_" +iconName.toLowerCase());
         }
-        return Key.of(NAMESPACE,defaultIconName);
+        return Key.of(NAMESPACE + "_" +defaultIconName);
     }
 
     public @NotNull String getDefaultIconName() { return defaultIconName; }
@@ -112,7 +112,7 @@ public class IconStorage {
             return false;
         }
         String safeName = name.toLowerCase();
-        Key key = Key.of(NAMESPACE,safeName);
+        Key key = Key.of(NAMESPACE + "_" +safeName);
         squaremap.iconRegistry().register(key, img);
         registeredIconNames.add(safeName);
         return true;
