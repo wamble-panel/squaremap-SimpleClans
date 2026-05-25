@@ -47,7 +47,7 @@ public final class Helper {
      * Supports all original {placeholders} from config.
      */
     public static String getClanLabel(LayerConfig config, Clan clan) {
-        long onlineCount = clan.getMembers().stream().filter(ClanPlayer::isOnline).count();
+        long onlineCount = clan.getMembers().stream().filter(cp -> cp.toPlayer() != null).count();
         String inactive = String.format("%s/%s", clan.getInactiveDays(), clan.getMaxInactiveDays());
         String onlineMembers = String.format("%s/%s", onlineCount, clan.getSize());
         String status = clan.isVerified() ? lang("verified") : lang("unverified");
@@ -80,7 +80,7 @@ public final class Helper {
      * Includes members, stats, leaders, allies, rivals, and description.
      */
     public static String buildClanHoverTooltip(Clan clan) {
-        long onlineCount = clan.getMembers().stream().filter(ClanPlayer::isOnline).count();
+        long onlineCount = clan.getMembers().stream().filter(cp -> cp.toPlayer() != null).count();
         int totalCount = clan.getSize();
 
         String leaders = clan.getMembers().stream()
@@ -130,7 +130,7 @@ public final class Helper {
      * Builds a compact HTML tooltip for land area markers.
      */
     public static String buildLandHoverTooltip(Clan clan) {
-        long onlineCount = clan.getMembers().stream().filter(ClanPlayer::isOnline).count();
+        long onlineCount = clan.getMembers().stream().filter(cp -> cp.toPlayer() != null).count();
         String tagColorHtml = colorToHTML(clan.getColorTag());
         if (tagColorHtml.isEmpty()) tagColorHtml = escapeHtml(clan.getTag());
 
