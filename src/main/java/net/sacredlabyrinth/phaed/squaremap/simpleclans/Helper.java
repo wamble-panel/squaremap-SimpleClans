@@ -16,10 +16,16 @@ import static net.sacredlabyrinth.phaed.squaremap.simpleclans.SquaremapSimpleCla
 
 public final class Helper {
 
-    /** Matches &x color codes where x is a hex digit (after § has been normalised to &). */
-    private static final Pattern COLOR_CODE = Pattern.compile("&(?<color>[\\da-f])(?<text>[^&]+)");
-    /** Strips any remaining &x or §x codes (color + formatting) that weren't converted. */
-    private static final Pattern STRIP_CODES = Pattern.compile("[&§][\\da-fk-orA-FK-OR]");
+    /**
+     * Matches either:
+     *  - Legacy hex  &x&H&H&H&H&H&H  (groups 1-6 = the 6 hex digits)
+     *  - Simple color &[0-9a-f]       (group 7 = the color char)
+     * followed by the text it colours (group 8, may be empty).
+     */
+    private static final Pattern COLOR_CODE = Pattern.compile(
+            "(?:&x&([0-9a-fA-F])&([0-9a-fA-F])&([0-9a-fA-F])&([0-9a-fA-F])&([0-9a-fA-F])&([0-9a-fA-F])|&([\\da-f]))([^&]*)");
+    /** Strips any remaining &x / §x codes (colors, formatting, bare hex-prefix) that weren't converted. */
+    private static final Pattern STRIP_CODES = Pattern.compile("[&§][xX\\da-fk-orA-FK-OR]");
     private static final String HTML_SPAN = "<span style='color: %s;'>%s</span>";
 
     private Helper() {}
@@ -36,16 +42,29 @@ public final class Helper {
         Matcher matcher = COLOR_CODE.matcher(string);
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {
-            String color = matcher.group("color");
-            String text  = matcher.group("text");
-            ChatColor chatColor = ChatColor.getByChar(color.charAt(0));
-            if (chatColor == null) continue;
-            matcher.appendReplacement(sb,
-                    Matcher.quoteReplacement(
-                            String.format(HTML_SPAN, HEXColor.of(chatColor).getCode(), text)));
+            String text = matcher.group(8);   // text that follows the color code
+            String colorHex;
+
+            if (matcher.group(1) != null) {
+                // Legacy 24-bit hex: &x&R1&R2&G1&G2&B1&B2
+                colorHex = ("#" + matcher.group(1) + matcher.group(2) + matcher.group(3)
+                        + matcher.group(4) + matcher.group(5) + matcher.group(6)).toUpperCase();
+            } else {
+                // Simple named color: &0–&9, &a–&f
+                ChatColor chatColor = ChatColor.getByChar(matcher.group(7).charAt(0));
+                if (chatColor == null) {
+                    matcher.appendReplacement(sb, Matcher.quoteReplacement(text));
+                    continue;
+                }
+                colorHex = HEXColor.of(chatColor).getCode();
+            }
+
+            String replacement = text.isEmpty() ? ""
+                    : String.format(HTML_SPAN, colorHex, text);
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(sb);
-        // Remove any leftover codes that had no text (e.g. &8 at end-of-string, &l, &r)
+        // Remove any leftover codes that had no text (e.g. &8 at end-of-string, &l, &r, bare &x)
         return STRIP_CODES.matcher(sb.toString()).replaceAll("");
     }
 
