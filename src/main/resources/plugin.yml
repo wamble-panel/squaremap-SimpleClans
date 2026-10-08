@@ -1,29 +1,29 @@
-name: ${project.name}
+name: squaremap-SimpleClans
+version: '${version}'
 main: net.sacredlabyrinth.phaed.squaremap.simpleclans.SquaremapSimpleClans
-version: ${project.version}
-website: ${project.url}
-author: phaed
-authors:
-  - RoinujNosde
-  - Minat0_
-api-version: "1.20"
-depend:
-  - squaremap
-  - SimpleClans
-commands:
-  clanmap:
-    description: squaremap-SimpleClans map commands
-    usage: /<command> help
+description: '${description}'
+website: https://github.com/wamble-panel/squaremap-SimpleClans
+authors: [phaed, RoinujNosde, Minat0_]
+api-version: '1.21'
+depend: [squaremap, SimpleClans]
+
+# Commands are registered through Paper's Brigadier API (see ClanMapCommand).
 permissions:
-  simpleclans.map.reload:
-    description: Can reload the plugin
-    default: op
-  simpleclans.map.list:
-    description: Can list available icons
-    default: op
-  simpleclans.map.icon.bypass:
-    description: Can use any icon regardless of per-icon permission
-    default: op
   simpleclans.map.seticon:
-    description: Can set the clan's map icon
+    description: Clan leaders can pick their clan's map icon with /clanmap icon
     default: true
+  simpleclans.map.list:
+    description: List available icons with /clanmap icons
+    default: true
+  simpleclans.map.icon.clanhome:
+    description: Use the bundled clanhome icon
+    default: true
+  simpleclans.map.icon.bypass:
+    description: Use any icon without its simpleclans.map.icon.<name> permission
+    default: op
+  simpleclans.map.hide:
+    description: Clan leaders can hide their clan from the map with /clanmap hide
+    default: op
+  simpleclans.map.reload:
+    description: Reload the plugin with /clanmap reload
+    default: op

@@ -1,3 +1,9 @@
+/build/
+/.gradle/
+/run/
 /target/
 /bin/
+/out/
 /.idea/
+*.iml
+.DS_Store

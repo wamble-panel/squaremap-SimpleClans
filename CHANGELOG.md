@@ -1,5 +1,38 @@
 # Changelog
 
+## 2.0.0 — squaremap rebuild
+
+Rewritten from scratch for squaremap, Paper 1.21+ and Java 21.
+
+### Map
+* Tooltips use squaremap's own look. Clan tags appear as dark nameplates (like squaremap's player nameplates) in their real Minecraft colours with the in-game text shadow.
+* Every colour format renders: `§x§R§R§G§G§B§B`, `&x&R&R…`, `&#RRGGBB`, `<#RRGGBB>`, `{#RRGGBB}`, named colours, bold/italic/underline/strikethrough. No more raw `&x`/`§8` codes in tooltips.
+* Hover shows the tag, name and online count. Clicking shows a popup with the configured rows: leaders (with heads), members, KDR, allies, rivals, wars, territory, description. Empty rows are skipped.
+* Territory draws every claim separately, coloured by clan tag. GriefPrevention claims, which SimpleClans reports as two corners, now render, and the full block area is covered.
+* Territory includes land owned by leaders (or all members) on every world, not only the claim the home is in.
+* Markers refresh on a timer, plus instantly on home, tag, membership, ally, rival and war changes, so tooltips stay current.
+* Kill markers say what kind of kill it was (war, rival, ally, neutral, civilian), can be filtered by type, and are capped.
+* New pixel-art icons for homes and kills.
+* Worlds loaded after startup get layers too.
+
+### Commands
+* `/clanmap` (alias `/cmap`) uses Paper's Brigadier API for real tab completion.
+* `/clanmap icon <name|reset>`, `/clanmap icons` (clickable list), `/clanmap hide` / `show`, `/clanmap reload`.
+* Clan icon choices are now saved to SimpleClans storage, so they survive restarts.
+* Messages use MiniMessage.
+
+### Build
+* Gradle (Kotlin DSL) replaces Maven, and Java replaces the Kotlin/Java mix. No shaded libraries.
+* GitHub Actions builds every push and attaches the jar to `v*` tag releases.
+
+### Upgrading from 1.x
+* The config layout changed. The old `config.yml` is renamed to `config-v1.yml` on first start.
+* Icons in `images/clanhome/` still load. New icons go in `icons/`.
+
+---
+
+Entries below are from the original Dynmap-SimpleClans project.
+
 ## [2.0.2](https://github.com/RoinujNosde/Dynmap-SimpleClans/compare/v2.0.1...v2.0.2) (2022-06-16)
 
 

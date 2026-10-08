@@ -1,75 +1,146 @@
-# squaremap-SimpleClans configuration
+# squaremap-SimpleClans
+# Shows SimpleClans homes, territory and recent kills on squaremap.
+# Run /clanmap reload after editing.
+
+# Don't change this; it lets the plugin know when your config needs migrating.
+config-version: 2
+
+# Log extra details to help track down problems.
 debug: false
 
-language:
-  layer-disabled: "&cThat layer is disabled!"
-  no-permission: "&cYou don't have permission to do that!"
-  reloaded: "&aPlugin reloaded successfully!"
-  not-member: "&cYou must be a member of a clan to use this command."
-  icon-changed: "&bClan icon updated! Changes will appear on the map shortly."
-  icon-not-found: "&cIcon not found. Use /clanmap seticon <tab> to list available icons."
-  error-reload: "&cAn error occurred while reloading the plugin!"
-  fee-enabled: "enabled"
-  fee-disabled: "disabled"
-  verified: "verified"
-  unverified: "unverified"
+# What clan markers show. Hovering shows the clan tag, name and who is online;
+# clicking opens a popup with the rows below.
+tooltip:
+  # Popup rows, top to bottom. Rows with nothing to show (no allies, no wars...) are skipped.
+  # Available: leaders, members, kdr, kills, allies, rivals, wars, territory, founded, description
+  rows: [leaders, members, kdr, allies, rivals, wars, territory, description]
 
-help-command:
-  - "&b[squaremap-SimpleClans] Commands:"
-  - "&b/clanmap seticon <name> &7- Set your clan's map icon (leader only)"
-  - "&c/clanmap reload &7- Reload the plugin and configuration"
-  - "&b/clanmap help &7- Show this help"
+  # How many players or clans a row lists before collapsing the rest into "+N more".
+  max-listed: 5
 
-layer:
-  lands:
-    enable: true
-    label: "Clan Lands"                   # Layer name shown in the squaremap sidebar
-    format: "{clan} &8(territory)"        # Click-tooltip label. Placeholders: {clan} {tag} {member_count} {founded} {rival} {neutral} {deaths} {kdr} {civilian} {members_online} {leaders} {allies} {rivals} {fee_value} {status} {fee_enabled} {inactive}. Colors: &1. Newline: |
-    layer-priority: 1                     # Higher = listed first in sidebar
-    hide-by-default: false
-    min-zoom: 0
-    hidden-lands: []                      # Clan tags to completely hide from this layer
-    style:
-      based-on-tag: false                 # When true, fill/line colours are taken from the clan's tag colour
-      fill:
-        color: "#57b356"                  # Hex fill colour when based-on-tag is false
-        opacity: 0.35                     # 0.0 – 1.0
-      line:
-        color: "#2d682d"                  # Hex border colour when based-on-tag is false
-        opacity: 0.8
-        weight: 3                         # Border width in pixels
+  # Head images shown next to player names. {uuid} and {name} are replaced.
+  # This is the same service squaremap's player list uses. Set to "" to show names only.
+  head-url: "https://mc-heads.net/avatar/{uuid}/16"
 
+  # Java DateTimeFormatter pattern for the "founded" row.
+  date-format: "d MMM yyyy"
+
+  # Wording used in tooltips, for translating.
+  labels:
+    leaders: "Leaders"
+    members: "Members"
+    online: "online"
+    kdr: "KDR"
+    kills: "Kills"
+    deaths: "deaths"
+    allies: "Allies"
+    rivals: "Rivals"
+    wars: "At war"
+    territory: "Territory"
+    claim: "claim"
+    claims: "claims"
+    blocks: "blocks"
+    founded: "Founded"
+    more: "+{count} more"
+    kill-civilian: "Civilian kill"
+    kill-neutral: "Kill"
+    kill-rival: "Rival kill"
+    kill-ally: "Ally kill"
+    kill-war: "War kill"
+
+# Every layer has these settings:
+#   enabled                  turn the layer on or off
+#   label                    name in squaremap's layer list
+#   show-controls            list the layer in squaremap's layer control
+#   default-hidden           start with the layer switched off for visitors
+#   layer-priority           order in the layer list (lower comes first)
+#   z-index                  drawing order between layers (higher is on top)
+#   update-interval-seconds  how often everything is redrawn; changes like a new home
+#                            show straight away regardless
+#   hidden-worlds            world names this layer never appears on
+layers:
   homes:
-    enable: true
-    default-icon: "clanhome"              # Icon name (no extension) used when a clan hasn't chosen one
+    enabled: true
     label: "Clan Homes"
-    format: "{clan} &8(home)"
+    show-controls: true
+    default-hidden: false
+    layer-priority: 20
+    z-index: 20
+    update-interval-seconds: 30
+    hidden-worlds: []
+    # Icon size on the map, in pixels.
+    icon-size: 32
+    # Icon clans get until a leader picks one with /clanmap icon. Icons are the PNG files in
+    # plugins/squaremap-SimpleClans/icons/; the file name without .png is the icon's name.
+    default-icon: "clanhome"
+    # Clan tags that never appear. Leaders can also hide their own clan with /clanmap hide.
+    hidden-clans: []
+
+  lands:
+    enabled: true
+    label: "Clan Territory"
+    show-controls: true
+    default-hidden: false
     layer-priority: 10
-    hide-by-default: false
-    min-zoom: 0
-    hidden-markers: []                    # Clan tags or "world:<worldname>" entries to hide
+    z-index: 10
+    # Territory comes from your protection plugin (WorldGuard, GriefPrevention, ...) through
+    # SimpleClans' land hooks. Looking it up is heavier than the other layers, so it runs less often.
+    update-interval-seconds: 300
+    hidden-worlds: []
+    hidden-clans: []
+    # Whose claims count as clan territory: "leaders" or "members".
+    territory-owners: leaders
+    style:
+      # Colour territory with the clan's tag colour; the colours below are used when off
+      # or when the tag has no colour.
+      color-from-tag: true
+      fill-color: "#57B356"
+      fill-opacity: 0.25
+      stroke-color: "#2D682D"
+      stroke-opacity: 0.9
+      stroke-weight: 2
 
   kills:
-    enable: true
-    label: "Deaths"
-    format: |
-      <table style='text-align:center;'>
-        <tr>
-          <th style='color:#da282f;padding:0.5em;'>{attacker}</th>
-          <th>&#9876;&#65039;</th>
-          <th style='color:#2863e8;padding:0.5em;'>{victim}</th>
-        </tr>
-        <tr>
-          <td>({atag})</td>
-          <td>[{time}]</td>
-          <td>({vtag})</td>
-        </tr>
-      </table>
-    time-format: "HH:mm:ss"              # DateTimeFormatter pattern for {time}
-    layer-priority: 20
-    hide-by-default: false
-    min-zoom: 0
-    visible-seconds: 300                  # How long each kill marker stays on the map
-    hide:
-      clan-players: false                 # Don't show deaths of clan members
-      civilians: false                    # Don't show deaths of players without a clan
+    enabled: true
+    label: "Recent Kills"
+    show-controls: true
+    default-hidden: false
+    layer-priority: 30
+    z-index: 30
+    hidden-worlds: []
+    # How long a kill stays on the map.
+    duration-seconds: 300
+    # Oldest kills are removed once there are this many.
+    max-markers: 100
+    icon-size: 16
+    # Java DateTimeFormatter pattern for the time shown on a kill.
+    time-format: "HH:mm"
+    # Which kills to show: civilian (victim has no clan), neutral, rival, ally, war
+    types: [civilian, neutral, rival, ally, war]
+    # The kill icon can be replaced by putting a kill.png in the plugin folder.
+
+# Chat messages, in MiniMessage format: https://docs.advntr.dev/minimessage/format
+# <prefix> inserts the prefix. Set a message to "" to send nothing.
+messages:
+  prefix: "<dark_gray>[<gold>ClanMap</gold>]</dark_gray> "
+  no-permission: "<prefix><red>You don't have permission to do that."
+  players-only: "<prefix><red>Only players can do that."
+  not-in-clan: "<prefix><red>You need to be in a clan."
+  not-leader: "<prefix><red>Only clan leaders can change how the clan shows on the map."
+  layer-disabled: "<prefix><red>The clan homes layer is turned off."
+  reloaded: "<prefix><green>Reloaded."
+  reload-failed: "<prefix><red>Reload failed; check the console."
+  icon-changed: "<prefix><green>Your clan's map icon is now <aqua><icon></aqua>."
+  icon-reset: "<prefix><green>Your clan's map icon is back to the default."
+  icon-not-found: "<prefix><red>There's no icon called <white><icon></white>. See <white>/clanmap icons</white>."
+  icons-header: "<prefix><gray>Icons you can use (<count>), click one to pick it:"
+  icons-hover: "<gray>Use <aqua><icon></aqua> for your clan"
+  icons-empty: "<prefix><gray>There are no icons you can use."
+  clan-hidden: "<prefix><yellow>Your clan is now hidden from the map."
+  clan-shown: "<prefix><green>Your clan is visible on the map again."
+  help:
+    header: "<prefix><gray>squaremap-SimpleClans commands:"
+    icon: "<gray> • <aqua>/clanmap icon [name|reset]</aqua> <dark_gray>-</dark_gray> pick your clan's map icon"
+    icons: "<gray> • <aqua>/clanmap icons</aqua> <dark_gray>-</dark_gray> list icons"
+    hide: "<gray> • <aqua>/clanmap hide</aqua> / <aqua>show</aqua> <dark_gray>-</dark_gray> hide your clan from the map"
+    reload: "<gray> • <aqua>/clanmap reload</aqua> <dark_gray>-</dark_gray> reload the config"

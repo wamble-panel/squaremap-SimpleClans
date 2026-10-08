@@ -1,172 +1,247 @@
 package net.sacredlabyrinth.phaed.squaremap.simpleclans;
 
-import net.sacredlabyrinth.phaed.squaremap.simpleclans.IconStorage.DefaultIcons;
-import net.sacredlabyrinth.phaed.squaremap.simpleclans.layers.HomesLayer;
-import net.sacredlabyrinth.phaed.squaremap.simpleclans.layers.KillsLayer;
-import net.sacredlabyrinth.phaed.squaremap.simpleclans.layers.LandsLayer;
-import net.sacredlabyrinth.phaed.squaremap.simpleclans.layers.LayerConfig;
-import net.sacredlabyrinth.phaed.squaremap.simpleclans.managers.CommandManager;
+import net.sacredlabyrinth.phaed.simpleclans.Clan;
 import net.sacredlabyrinth.phaed.simpleclans.SimpleClans;
 import net.sacredlabyrinth.phaed.simpleclans.managers.ClanManager;
-import org.bukkit.ChatColor;
-import org.bukkit.configuration.ConfigurationSection;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.command.ClanMapCommand;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.config.Messages;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.config.Settings;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.HomesLayer;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.KillsLayer;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.LandsLayer;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.MapLayer;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.listener.ClanListener;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.listener.DiplomacyListener;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.render.Tooltips;
+import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.jpenilla.squaremap.api.Squaremap;
 import xyz.jpenilla.squaremap.api.SquaremapProvider;
 
 import java.io.File;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 
-import static org.bukkit.Bukkit.getPluginManager;
-import static org.bukkit.Bukkit.getScheduler;
+public final class SquaremapSimpleClans extends JavaPlugin {
 
-public class SquaremapSimpleClans extends JavaPlugin {
+    /** Delay before an event-triggered refresh, so bursts of changes cost one rebuild. */
+    private static final long REFRESH_DEBOUNCE_TICKS = 40L;
 
-    private static SquaremapSimpleClans instance;
+    private SimpleClans simpleClans;
+    private Squaremap squaremap;
 
-    private Squaremap squaremapApi;
-    private SimpleClans simpleclans;
+    private Settings settings;
+    private Messages messages;
+    private IconRegistry icons;
+    private Tooltips tooltips;
 
-    private @Nullable HomesLayer homesLayer;
-    private @Nullable KillsLayer killsLayer;
-    private @Nullable LandsLayer landsLayer;
-
-    public static SquaremapSimpleClans getInstance() { return instance; }
-
-    public static String lang(@NotNull String key) {
-        String msg = instance.getConfig().getString("language." + key);
-        return msg == null
-                ? "Missing language key: " + key
-                : ChatColor.translateAlternateColorCodes('&', msg);
-    }
-
-    public static void debug(String message, boolean respectConfig) {
-        if (respectConfig && !instance.getConfig().getBoolean("debug", false)) return;
-        instance.getLogger().info("[Debug] " + message);
-    }
-
-    public static void debug(String message) { debug(message, true); }
-
-    // -------------------------------------------------------------------------
+    private @Nullable HomesLayer homes;
+    private @Nullable LandsLayer lands;
+    private @Nullable KillsLayer kills;
+    private @Nullable BukkitTask pendingRefresh;
+    private boolean pendingLands;
 
     @Override
     public void onEnable() {
-        instance = this;
+        migrateOldConfig();
         saveDefaultConfig();
-        if (reload()) {
-            new CommandManager(this);
-            getPluginManager().registerEvents(new SquaremapSimpleClansListener(this), this);
+
+        simpleClans = (SimpleClans) getServer().getPluginManager().getPlugin("SimpleClans");
+        squaremap = SquaremapProvider.get();
+
+        load();
+
+        getServer().getPluginManager().registerEvents(new ClanListener(this), this);
+        try {
+            getServer().getPluginManager().registerEvents(new DiplomacyListener(this), this);
+        } catch (LinkageError error) {
+            getLogger().info("This SimpleClans version lacks some events; ally/rival/war changes will show "
+                    + "on the next periodic refresh instead of instantly.");
         }
+        ClanMapCommand.register(this);
     }
 
     @Override
     public void onDisable() {
-        cleanupLayers();
+        unload();
     }
 
-    public boolean reload() {
+    /** Re-reads config.yml and rebuilds every layer. */
+    public void reload() {
         reloadConfig();
-        cleanupLayers();
+        unload();
+        load();
+    }
 
+    private void load() {
+        settings = Settings.load(getConfig(), getLogger());
+        messages = new Messages(getConfig().getConfigurationSection("messages"));
+
+        icons = new IconRegistry(this, squaremap);
+        icons.load(settings.homes().defaultIcon());
+
+        tooltips = new Tooltips(settings.tooltip(), clanManager(), clan -> lands != null ? lands.territory(clan) : null);
+
+        if (settings.lands().layer().enabled()) {
+            lands = enable(new LandsLayer(this, settings.lands()));
+        }
+        if (settings.homes().layer().enabled()) {
+            homes = enable(new HomesLayer(this, settings.homes()));
+        }
+        if (settings.kills().layer().enabled()) {
+            kills = enable(new KillsLayer(this, settings.kills()));
+        }
+    }
+
+    private <T extends MapLayer> @Nullable T enable(T layer) {
         try {
-            loadDependencies();
-        } catch (IllegalStateException ex) {
-            getLogger().severe(ex.getMessage());
-            getPluginLoader().disablePlugin(this);
-            return false;
-        }
-
-        saveDefaultImages();
-        loadLayers();
-        return true;
-    }
-
-    private void loadDependencies() {
-        try {
-            squaremapApi = SquaremapProvider.get();
-        } catch (IllegalStateException ex) {
-            throw new IllegalStateException("Squaremap is not available. Make sure squaremap is loaded first.", ex);
-        }
-
-        simpleclans = (SimpleClans) getPluginManager().getPlugin("SimpleClans");
-        if (simpleclans == null) {
-            throw new IllegalStateException("SimpleClans was not found, disabling...");
+            layer.enable();
+            return layer;
+        } catch (RuntimeException ex) {
+            getLogger().log(Level.SEVERE, "Could not enable a map layer", ex);
+            layer.disable();
+            return null;
         }
     }
 
-    private void loadLayers() {
-        ConfigurationSection homesSection = Objects.requireNonNull(
-                getConfig().getConfigurationSection("layer.homes"));
-        ConfigurationSection killsSection = Objects.requireNonNull(
-                getConfig().getConfigurationSection("layer.kills"));
-        ConfigurationSection landsSection = Objects.requireNonNull(
-                getConfig().getConfigurationSection("layer.lands"));
-
-        String defaultHomeIcon = homesSection.getString("default-icon", DefaultIcons.CLANHOME.getName());
-
-        IconStorage homesIcons = new IconStorage(this, "images/clanhome", defaultHomeIcon, squaremapApi);
-        IconStorage killsIcons = new IconStorage(this, "images", DefaultIcons.BLOOD.getName(), squaremapApi);
-
-        try {
-            homesLayer = new HomesLayer(getClanManager(), homesIcons, new LayerConfig(homesSection), squaremapApi);
-        } catch (IllegalStateException ex) {
-            debug(ex.getMessage());
+    private void unload() {
+        if (pendingRefresh != null) {
+            pendingRefresh.cancel();
+            pendingRefresh = null;
         }
-
-        try {
-            killsLayer = new KillsLayer(killsIcons, new LayerConfig(killsSection), squaremapApi);
-        } catch (IllegalStateException ex) {
-            debug(ex.getMessage());
-        }
-
-        try {
-            // Run on next tick so that ProtectionManager lands coordinates are ready
-            getScheduler().runTask(this, () -> {
-                try {
-                    landsLayer = new LandsLayer(getClanManager(), simpleclans.getProtectionManager(),
-                            new LayerConfig(landsSection), squaremapApi);
-                } catch (IllegalStateException ex) {
-                    debug(ex.getMessage());
-                }
-            });
-        } catch (Exception ex) {
-            debug("LandsLayer failed to schedule: " + ex.getMessage());
+        layers().forEach(MapLayer::disable);
+        homes = null;
+        lands = null;
+        kills = null;
+        if (icons != null) {
+            icons.unregisterAll();
         }
     }
 
-    private void cleanupLayers() {
-        if (homesLayer != null) { homesLayer.cleanup(); homesLayer = null; }
-        if (killsLayer != null)  { killsLayer.cleanup();  killsLayer = null; }
-        if (landsLayer != null)  { landsLayer.cleanup();  landsLayer = null; }
+    // -- updates -----------------------------------------------------------
+
+    /** Re-renders one clan now (home icon) and its territory soon. */
+    public void updateClan(@NotNull Clan clan) {
+        if (homes != null) {
+            homes.update(clan);
+        }
+        requestRefresh(true);
     }
 
-    private void saveDefaultImages() {
-        saveIfMissing(DefaultIcons.CLANHOME.getPath());
-        saveIfMissing(DefaultIcons.BLOOD.getPath());
-    }
-
-    private void saveIfMissing(String resourcePath) {
-        if (!new File(getDataFolder(), resourcePath).exists()) {
-            saveResource(resourcePath, false);
+    public void removeClan(@NotNull String tag) {
+        if (homes != null) {
+            homes.remove(tag);
+        }
+        if (lands != null) {
+            lands.remove(tag);
         }
     }
 
-    // -------------------------------------------------------------------------
+    public void refreshHomes() {
+        if (homes != null) {
+            homes.refresh();
+        }
+    }
 
-    @NotNull
-    public ClanManager getClanManager() { return simpleclans.getClanManager(); }
+    /**
+     * Schedules a rebuild shortly. Home tooltips are cheap; territory asks every protection
+     * plugin for land, so only pass {@code includeLands} when land ownership may have changed.
+     */
+    public void requestRefresh(boolean includeLands) {
+        pendingLands |= includeLands;
+        if (pendingRefresh != null) {
+            return;
+        }
+        pendingRefresh = getServer().getScheduler().runTaskLater(this, () -> {
+            pendingRefresh = null;
+            if (pendingLands && lands != null) {
+                lands.refresh(); // also refreshes homes
+            } else {
+                refreshHomes();
+            }
+            pendingLands = false;
+        }, REFRESH_DEBOUNCE_TICKS);
+    }
 
-    @NotNull
-    public Squaremap getSquaremapApi() { return squaremapApi; }
+    public void worldLoaded(@NotNull World world) {
+        // squaremap sets the world up on the same event; give it a tick
+        getServer().getScheduler().runTask(this, () -> {
+            for (MapLayer layer : layers()) {
+                layer.attach(world);
+                layer.refresh();
+            }
+        });
+    }
 
-    @Nullable
-    public HomesLayer getHomesLayer() { return homesLayer; }
+    public void worldUnloaded(@NotNull World world) {
+        layers().forEach(layer -> layer.detach(world));
+    }
 
-    @Nullable
-    public KillsLayer getKillsLayer() { return killsLayer; }
+    private List<MapLayer> layers() {
+        List<MapLayer> layers = new ArrayList<>(3);
+        if (lands != null) layers.add(lands);
+        if (homes != null) layers.add(homes);
+        if (kills != null) layers.add(kills);
+        return layers;
+    }
 
-    @Nullable
-    public LandsLayer getLandsLayer() { return landsLayer; }
+    /** 1.x configs have a different layout; keep them for reference and start fresh. */
+    private void migrateOldConfig() {
+        File file = new File(getDataFolder(), "config.yml");
+        if (!file.exists()) {
+            return;
+        }
+        if (YamlConfiguration.loadConfiguration(file).getInt("config-version", 1) < Settings.CONFIG_VERSION) {
+            File backup = new File(getDataFolder(), "config-v1.yml");
+            if (file.renameTo(backup)) {
+                getLogger().warning("Your config.yml was from squaremap-SimpleClans 1.x and has been replaced. "
+                        + "The old file was saved as config-v1.yml.");
+            }
+        }
+    }
+
+    public void debug(@NotNull String message) {
+        if (settings != null && settings.debug()) {
+            getLogger().info("[debug] " + message);
+        }
+    }
+
+    // -- accessors ---------------------------------------------------------
+
+    public @NotNull SimpleClans simpleClans() {
+        return simpleClans;
+    }
+
+    public @NotNull ClanManager clanManager() {
+        return simpleClans.getClanManager();
+    }
+
+    public @NotNull Squaremap squaremap() {
+        return squaremap;
+    }
+
+    public @NotNull Messages messages() {
+        return messages;
+    }
+
+    public @NotNull IconRegistry icons() {
+        return icons;
+    }
+
+    public @NotNull Tooltips tooltips() {
+        return tooltips;
+    }
+
+    public @Nullable HomesLayer homes() {
+        return homes;
+    }
+
+    public @Nullable KillsLayer kills() {
+        return kills;
+    }
 }
