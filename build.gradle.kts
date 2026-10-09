@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "net.sacredlabyrinth.phaed.squaremap.simpleclans"
-version = "2.1.0"
+version = "2.2.0"
 description = "Shows SimpleClans homes, territory and kills on squaremap"
 
 repositories {
@@ -20,6 +20,7 @@ dependencies {
     }
 
     testCompileOnly("org.jetbrains:annotations:26.0.2")
+    testImplementation("net.kyori:adventure-api:4.17.0")
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

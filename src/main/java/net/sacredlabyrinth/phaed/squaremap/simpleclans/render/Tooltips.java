@@ -31,7 +31,7 @@ import static net.sacredlabyrinth.phaed.squaremap.simpleclans.render.LegacyText.
 public final class Tooltips {
 
     private static final String NAMEPLATE = "display:inline-block;margin:1px 0;padding:0 4px;"
-            + "background:rgba(0,0,0,.6);border-radius:2px;color:#FFFFFF;font-weight:bold;"
+            + "background:rgba(24,24,27,.9);border-radius:3px;color:#FFFFFF;font-weight:bold;"
             + "text-shadow:1px 1px 0 #3F3F3F;line-height:1.5;white-space:nowrap";
     private static final String MUTED = "color:#666";
     private static final String LABEL_CELL = "color:#777;padding:1px 10px 1px 0;vertical-align:top;white-space:nowrap";

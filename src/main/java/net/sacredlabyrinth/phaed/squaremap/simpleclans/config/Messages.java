@@ -33,6 +33,11 @@ public final class Messages {
         return parse(raw(key, key), placeholders);
     }
 
+    /** True if the message is set to "" (meaning: don't show it). */
+    public boolean isBlank(@NotNull String key) {
+        return raw(key, "").isBlank();
+    }
+
     private Component parse(String raw, TagResolver... placeholders) {
         return MINI_MESSAGE.deserialize(raw, TagResolver.resolver(prefix, TagResolver.resolver(placeholders)));
     }

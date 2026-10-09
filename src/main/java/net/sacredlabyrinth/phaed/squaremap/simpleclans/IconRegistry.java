@@ -1,5 +1,6 @@
 package net.sacredlabyrinth.phaed.squaremap.simpleclans;
 
+import org.bukkit.DyeColor;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -43,6 +44,7 @@ public final class IconRegistry {
     private final JavaPlugin plugin;
     private final Squaremap squaremap;
     private final Map<String, Key> icons = new HashMap<>();
+    private final Map<String, Integer> colors = new HashMap<>();
     private final Set<Key> registered = new HashSet<>();
     private List<String> ordered = List.of();
     private String defaultIcon = FALLBACK_ICON;
@@ -64,6 +66,7 @@ public final class IconRegistry {
                 BufferedImage image = readResource("icons/" + name + ".png");
                 if (image != null) {
                     icons.put(name, register("simpleclans_icon_" + name, image));
+                    colors.put(name, averageColor(image));
                 }
             }
         }
@@ -99,6 +102,7 @@ public final class IconRegistry {
         }
         registered.clear();
         icons.clear();
+        colors.clear();
         ordered = List.of();
         killIcon = null;
     }
@@ -129,6 +133,18 @@ public final class IconRegistry {
 
     public @NotNull Key killIcon() {
         return killIcon != null ? killIcon : key(null);
+    }
+
+    /**
+     * The colour that represents an icon in menus: a banner's dye colour, otherwise the
+     * average colour of the image. -1 if the icon doesn't exist.
+     */
+    public int color(@NotNull String icon) {
+        String dye = bannerColor(icon);
+        if (dye != null) {
+            return DyeColor.valueOf(dye.toUpperCase(Locale.ROOT)).getColor().asRGB();
+        }
+        return colors.getOrDefault(icon, -1);
     }
 
     /** The dye colour of a bundled-style banner icon, e.g. "light_blue", or null. */
@@ -172,6 +188,7 @@ public final class IconRegistry {
             BufferedImage image = read(file);
             if (image != null) {
                 icons.put(name, register("simpleclans_icon_" + name, image));
+                colors.put(name, averageColor(image));
             }
         }
     }
@@ -205,6 +222,28 @@ public final class IconRegistry {
             plugin.getLogger().warning("Could not read icon '" + file.getName() + "': " + ex.getMessage());
             return null;
         }
+    }
+
+    /** Average of the clearly visible pixels, ignoring transparency and near-black outlines. */
+    private static int averageColor(BufferedImage image) {
+        long r = 0, g = 0, b = 0, count = 0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                int red = (argb >> 16) & 0xFF, green = (argb >> 8) & 0xFF, blue = argb & 0xFF;
+                if ((argb >>> 24) < 128 || red + green + blue < 60) {
+                    continue;
+                }
+                r += red;
+                g += green;
+                b += blue;
+                count++;
+            }
+        }
+        if (count == 0) {
+            return 0xAAAAAA;
+        }
+        return (int) (r / count) << 16 | (int) (g / count) << 8 | (int) (b / count);
     }
 
     private Key register(String id, BufferedImage image) {

@@ -1,12 +1,12 @@
 package net.sacredlabyrinth.phaed.squaremap.simpleclans.menu;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
 import net.sacredlabyrinth.phaed.simpleclans.ClanPlayer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.ClanFlags;
@@ -15,6 +15,8 @@ import net.sacredlabyrinth.phaed.squaremap.simpleclans.Perms;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.SquaremapSimpleClans;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.config.Messages;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.config.Settings;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.render.LegacyText;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.render.TextComponents;
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
@@ -37,20 +39,22 @@ import java.util.Map;
  * The icon picker clan leaders open with {@code /clanmap icon}.
  *
  * <pre>
- *  [ ][ ][ ][ ][clan][ ][ ][ ][ ]     header: the clan and its current icon
- *  [w][l][g][b] |  [b][r][o][y]       icons, eight per row in two groups of four;
- *  [l][g][c][l] |  [b][p][m][p]       banners first, in creative-inventory order
- *  [&lt;][ ][ ][reset][map][x][ ][ ][&gt;]  footer: pages, reset, show/hide, close
+ *  ▒▒▒▒[clan]▒▒▒▒                       header: the clan, its icon and unlock progress
+ *  [w][l][g][b] ┃ [b][r][o][y]          icons, eight per row in two groups of four;
+ *  [l][g][c][l] ┃ [b][p][m][p]          banners first, in creative-inventory order
+ *  ▒[&lt;]▒[reset][map][x]▒[&gt;]▒           footer: pages, reset, show/hide, close
  * </pre>
- * Each banner icon is shown as the banner item of the same dye colour.
+ * The frame (▒) is stained glass in the colour of the clan's current icon, so picking an
+ * icon recolours the whole menu. Banner icons are shown as the banner of the same colour.
  */
 public final class IconMenu implements InventoryHolder {
 
     private static final int COLUMNS = 8;
     private static final int MAX_ICON_ROWS = 4;
     private static final int PER_PAGE = COLUMNS * MAX_ICON_ROWS;
-    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.builder()
-            .character('§').hexColors().useUnusualXRepeatedCharacterHexFormat().build();
+    private static final int MAX_BAR = 32;
+    private static final TextColor LOCKED = TextColor.color(0x5A5A60);
+    private static final TextColor BAR_LOCKED = TextColor.color(0x3A3A3F);
 
     private final SquaremapSimpleClans plugin;
     private final Player player;
@@ -68,14 +72,15 @@ public final class IconMenu implements InventoryHolder {
 
         boolean showLocked = plugin.settings().menu().showLocked();
         List<String> visible = new ArrayList<>();
-        for (String icon : plugin.icons().names()) {
-            if (showLocked || Perms.canUseIcon(player, plugin.icons(), icon)) {
+        for (String icon : registry().names()) {
+            if (showLocked || unlocked(icon)) {
                 visible.add(icon);
             }
         }
         this.icons = List.copyOf(visible);
         this.iconRows = Math.max(1, Math.min(MAX_ICON_ROWS, (icons.size() + COLUMNS - 1) / COLUMNS));
-        this.inventory = Bukkit.createInventory(this, (iconRows + 2) * 9, messages().get("menu.title"));
+        this.inventory = Bukkit.createInventory(this, (iconRows + 2) * 9,
+                messages().get("menu.title", Placeholder.component("clan", TextComponents.of(clan.getColorTag()))));
     }
 
     public static void open(@NotNull SquaremapSimpleClans plugin, @NotNull Player player, @NotNull Clan clan) {
@@ -103,45 +108,44 @@ public final class IconMenu implements InventoryHolder {
     private void render() {
         inventory.clear();
         actions.clear();
-        ItemStack filler = filler();
+
+        String current = registry().effective(ClanFlags.icon(clan));
+        boolean hidden = ClanFlags.hidden(clan);
+        int footer = (iconRows + 1) * 9;
+
+        // frame and background
+        ItemStack frame = pane(frameFor(current));
+        ItemStack divider = pane(Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack empty = pane(Material.BLACK_STAINED_GLASS_PANE);
         for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, filler);
+            boolean edge = slot < 9 || slot >= footer;
+            inventory.setItem(slot, edge ? frame : slot % 9 == 4 ? divider : empty);
         }
 
-        String current = plugin.icons().effective(ClanFlags.icon(clan));
-        boolean hidden = ClanFlags.hidden(clan);
-
-        // header
-        inventory.setItem(4, item(itemFor(current),
-                LEGACY.deserialize(clan.getColorTag()).append(Component.text(" " + clan.getName(), NamedTextColor.WHITE)),
-                List.of(messages().get("menu.info-icon", icon(current)),
-                        messages().get(hidden ? "menu.info-hidden" : "menu.info-shown")),
-                true));
+        inventory.setItem(4, header(current, hidden));
 
         // icons
         int first = page * PER_PAGE;
         for (int i = 0; i < PER_PAGE && first + i < icons.size(); i++) {
             String icon = icons.get(first + i);
-            int row = 1 + i / COLUMNS;
-            int column = i % COLUMNS < 4 ? i % COLUMNS : i % COLUMNS + 1; // skip the middle column
-            int slot = row * 9 + column;
+            int column = i % COLUMNS < 4 ? i % COLUMNS : i % COLUMNS + 1; // skip the divider
+            int slot = (1 + i / COLUMNS) * 9 + column;
             inventory.setItem(slot, iconItem(icon, icon.equals(current)));
             actions.put(slot, () -> choose(icon));
         }
 
         // footer
-        int footer = (iconRows + 1) * 9;
         int pages = Math.max(1, (icons.size() + PER_PAGE - 1) / PER_PAGE);
         TagResolver pageInfo = TagResolver.resolver(Placeholder.unparsed("page", String.valueOf(page + 1)),
                 Placeholder.unparsed("pages", String.valueOf(pages)));
         if (page > 0) {
-            button(footer, Material.ARROW, "menu.previous", List.of(messages().get("menu.page", pageInfo)), () -> turn(-1));
+            button(footer + 1, Material.ARROW, "menu.previous", List.of(messages().get("menu.page", pageInfo)), () -> turn(-1));
         }
         if (page < pages - 1) {
-            button(footer + 8, Material.ARROW, "menu.next", List.of(messages().get("menu.page", pageInfo)), () -> turn(1));
+            button(footer + 7, Material.ARROW, "menu.next", List.of(messages().get("menu.page", pageInfo)), () -> turn(1));
         }
         button(footer + 3, Material.BRUSH, "menu.reset",
-                List.of(messages().get("menu.reset-lore", icon(plugin.icons().defaultIcon()))), () -> choose(null));
+                List.of(messages().get("menu.reset-lore", iconName(registry().defaultIcon()))), () -> choose(null));
         if (player.hasPermission(Perms.HIDE)) {
             button(footer + 4, hidden ? Material.ENDER_PEARL : Material.ENDER_EYE,
                     hidden ? "menu.hidden" : "menu.shown",
@@ -151,21 +155,71 @@ public final class IconMenu implements InventoryHolder {
         button(footer + 5, Material.BARRIER, "menu.close", List.of(), player::closeInventory);
     }
 
-    private ItemStack iconItem(String icon, boolean selected) {
-        boolean unlocked = Perms.canUseIcon(player, plugin.icons(), icon);
+    private ItemStack header(String current, boolean hidden) {
         List<Component> lore = new ArrayList<>();
+        lore.add(messages().get("menu.info-icon", iconName(current)));
+        int color = registry().color(current);
+        if (color != -1) {
+            lore.add(messages().get("menu.info-color", swatch(color)));
+        }
+        lore.add(Component.empty());
+
+        int unlocked = 0;
+        for (String icon : registry().names()) {
+            if (unlocked(icon)) {
+                unlocked++;
+            }
+        }
+        lore.add(messages().get("menu.info-unlocked",
+                Placeholder.unparsed("unlocked", String.valueOf(unlocked)),
+                Placeholder.unparsed("total", String.valueOf(registry().names().size()))));
+        if (registry().names().size() <= MAX_BAR) {
+            lore.add(progressBar());
+        }
+        lore.add(Component.empty());
+        lore.add(messages().get(hidden ? "menu.info-hidden" : "menu.info-shown"));
+
+        Component name = TextComponents.of(clan.getColorTag())
+                .append(Component.text(" " + LegacyText.strip(clan.getName()), NamedTextColor.WHITE));
+        return item(itemFor(current), name, lore, true);
+    }
+
+    private ItemStack iconItem(String icon, boolean selected) {
+        boolean unlocked = unlocked(icon);
+        List<Component> lore = new ArrayList<>();
+        int color = registry().color(icon);
+        if (color != -1) {
+            lore.add(messages().get("menu.icon-color", swatch(color)));
+            lore.add(Component.empty());
+        }
         if (selected) {
             lore.add(messages().get("menu.icon-selected"));
         } else if (unlocked) {
             lore.add(messages().get("menu.icon-available"));
         } else {
             lore.add(messages().get("menu.icon-locked"));
+            if (!messages().isBlank("menu.icon-locked-hint")) {
+                lore.add(messages().get("menu.icon-locked-hint"));
+            }
         }
-        if (icon.equals(plugin.icons().defaultIcon())) {
+        if (icon.equals(registry().defaultIcon())) {
             lore.add(messages().get("menu.icon-default"));
         }
-        TextColor color = unlocked ? colorOf(icon) : NamedTextColor.DARK_GRAY;
-        return item(itemFor(icon), Component.text(displayName(icon), color), lore, selected);
+
+        Component name = Component.text(displayName(icon), unlocked ? readable(color) : LOCKED);
+        if (selected) {
+            name = name.decorate(TextDecoration.BOLD);
+        }
+        return item(itemFor(icon), name, lore, selected);
+    }
+
+    /** One square per icon, in the icon's colour when unlocked. */
+    private Component progressBar() {
+        TextComponent.Builder bar = Component.text();
+        for (String icon : registry().names()) {
+            bar.append(Component.text("■", unlocked(icon) ? readable(registry().color(icon)) : BAR_LOCKED));
+        }
+        return bar.build();
     }
 
     private void button(int slot, Material material, String nameKey, List<Component> lore, Runnable action) {
@@ -179,21 +233,21 @@ public final class IconMenu implements InventoryHolder {
         if (!stillLeader()) {
             return;
         }
-        String current = plugin.icons().effective(ClanFlags.icon(clan));
-        String target = icon != null ? icon : plugin.icons().defaultIcon();
+        String current = registry().effective(ClanFlags.icon(clan));
+        String target = icon != null ? icon : registry().defaultIcon();
         if (target.equals(current) && (icon != null || ClanFlags.icon(clan) == null)) {
             sound(Sound.UI_BUTTON_CLICK, 1.5f);
             return;
         }
-        if (icon != null && !Perms.canUseIcon(player, plugin.icons(), icon)) {
+        if (icon != null && !unlocked(icon)) {
             sound(Sound.BLOCK_NOTE_BLOCK_BASS, 0.6f);
-            player.sendActionBar(messages().get("menu.locked-feedback", icon(icon)));
+            player.sendActionBar(messages().get("menu.locked-feedback", iconName(icon)));
             return;
         }
         ClanFlags.setIcon(plugin.simpleClans(), clan, icon);
         plugin.updateClan(clan);
         sound(Sound.UI_LOOM_SELECT_PATTERN, 1f);
-        player.sendActionBar(messages().get("menu.selected-feedback", icon(target)));
+        player.sendActionBar(messages().get("menu.selected-feedback", iconName(target)));
         render();
     }
 
@@ -228,7 +282,7 @@ public final class IconMenu implements InventoryHolder {
         return true;
     }
 
-    // -- items -------------------------------------------------------------
+    // -- items and colours -------------------------------------------------
 
     private Material itemFor(String icon) {
         Settings.Menu menu = plugin.settings().menu();
@@ -245,6 +299,29 @@ public final class IconMenu implements InventoryHolder {
         return menu.customIconItem();
     }
 
+    /** Stained glass in the dye colour closest to the icon's colour. */
+    private Material frameFor(String icon) {
+        int rgb = registry().color(icon);
+        if (rgb == -1) {
+            return Material.GRAY_STAINED_GLASS_PANE;
+        }
+        DyeColor nearest = DyeColor.WHITE;
+        long best = Long.MAX_VALUE;
+        for (DyeColor dye : DyeColor.values()) {
+            int other = dye.getColor().asRGB();
+            long dr = (rgb >> 16 & 0xFF) - (other >> 16 & 0xFF);
+            long dg = (rgb >> 8 & 0xFF) - (other >> 8 & 0xFF);
+            long db = (rgb & 0xFF) - (other & 0xFF);
+            long distance = dr * dr * 3 + dg * dg * 4 + db * db * 2;
+            if (distance < best) {
+                best = distance;
+                nearest = dye;
+            }
+        }
+        Material pane = Material.matchMaterial(nearest.name() + "_STAINED_GLASS_PANE");
+        return pane != null ? pane : Material.GRAY_STAINED_GLASS_PANE;
+    }
+
     private static ItemStack item(Material material, Component name, List<Component> lore, boolean glint) {
         ItemStack item = new ItemStack(material);
         item.editMeta(meta -> {
@@ -258,8 +335,8 @@ public final class IconMenu implements InventoryHolder {
         return item;
     }
 
-    private static ItemStack filler() {
-        ItemStack pane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+    private static ItemStack pane(Material material) {
+        ItemStack pane = new ItemStack(material);
         pane.editMeta(meta -> meta.setHideTooltip(true));
         return pane;
     }
@@ -282,19 +359,35 @@ public final class IconMenu implements InventoryHolder {
         return out.toString();
     }
 
-    private static TextColor colorOf(String icon) {
-        String color = IconRegistry.bannerColor(icon);
-        if (color == null) {
+    /** The colour itself, lifted toward white when it would vanish on the dark tooltip. */
+    private static TextColor readable(int rgb) {
+        if (rgb == -1) {
             return NamedTextColor.WHITE;
         }
-        if (color.equals("black")) {
-            return TextColor.color(0x6E6E75); // dye black is unreadable on the tooltip background
+        if (!LegacyText.isDark(rgb)) {
+            return TextColor.color(rgb);
         }
-        return TextColor.color(DyeColor.valueOf(color.toUpperCase(Locale.ROOT)).getColor().asRGB());
+        int r = rgb >> 16 & 0xFF, g = rgb >> 8 & 0xFF, b = rgb & 0xFF;
+        return TextColor.color(r + (255 - r) * 2 / 5, g + (255 - g) * 2 / 5, b + (255 - b) * 2 / 5);
     }
 
-    private TagResolver icon(String icon) {
-        return Placeholder.component("icon", Component.text(displayName(icon), colorOf(icon)));
+    /** {@code <swatch>} (a block of the colour) and {@code <hex>} for menu texts. */
+    private static TagResolver swatch(int rgb) {
+        return TagResolver.resolver(
+                Placeholder.component("swatch", Component.text("■■", readable(rgb))),
+                Placeholder.unparsed("hex", LegacyText.hex(rgb)));
+    }
+
+    private TagResolver iconName(String icon) {
+        return Placeholder.component("icon", Component.text(displayName(icon), readable(registry().color(icon))));
+    }
+
+    private boolean unlocked(String icon) {
+        return Perms.canUseIcon(player, registry(), icon);
+    }
+
+    private IconRegistry registry() {
+        return plugin.icons();
     }
 
     private Messages messages() {

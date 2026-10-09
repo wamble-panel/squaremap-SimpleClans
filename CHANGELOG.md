@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.2.0 — nicer menu, hex colours everywhere
+
+### Hex colours
+* In-game text now uses the same colour parser as the web map, so clan tags written as `&#RRGGBB`, `&x&R&R…`, `§x§R§R…`, `<#RRGGBB>` or `{#RRGGBB}` show their real colours in the menu instead of raw codes.
+* Map nameplates: colours too dark to read on the dark nameplate (`§0`, `§1`, `§4`, `§8`, dark hex) get a soft light glow. Brighter colours keep Minecraft's own drop shadow. The nameplate is a little darker for contrast.
+* Every chat and menu message uses a hex palette with gradient prefix and title. All of it is editable MiniMessage, with gradients and `<#RRGGBB>` supported.
+
+### Menu
+* The frame takes on the colour of your clan's icon (the closest stained glass) and changes as soon as you pick one.
+* A gray divider splits the icons into two groups of four.
+* Each icon shows a colour swatch with its hex code. The selected icon's name is bold and glows.
+* The header shows the clan's coloured tag and name, the current icon and colour, an "Unlocked 5/16" count, and a progress bar of squares, each in its icon's colour.
+* Custom PNG icons get a colour too, the average of their visible pixels, so they also get swatches, coloured names and a matching frame.
+* Dark colours such as the black banner are lifted so their names stay readable.
+* New message keys: `menu.info-color`, `menu.info-unlocked`, `menu.icon-color`, `menu.icon-locked-hint`. Existing configs pick them up automatically.
+
 ## 2.1.0 — banners and icon picker
 
 * 16 pixel-art banner icons, one per Minecraft dye colour (`banner_white` … `banner_pink`). The red banner is the new default.
