@@ -58,7 +58,7 @@ The plugin comes with a pixel-art banner in each of Minecraft's 16 dye colours:
 
 `banner_white`, `banner_light_gray`, `banner_gray`, `banner_black`, `banner_brown`, `banner_red`, `banner_orange`, `banner_yellow`, `banner_lime`, `banner_green`, `banner_cyan`, `banner_light_blue`, `banner_blue`, `banner_purple`, `banner_magenta`, `banner_pink`
 
-Clan leaders choose one with `/clanmap icon`. That opens a chest menu where each icon appears as the matching Minecraft banner. Locked icons are greyed out, and the menu also has a reset button and a show/hide toggle. Each icon needs its own permission, so you can sell them as ranks, rewards or perks.
+Clan leaders choose one with `/clanmap icon`. That opens a chest menu where each icon appears as the matching Minecraft banner. Locked icons are greyed out, and the menu also has a reset button and a show/hide toggle. Each icon needs its own permission, so you can sell them as ranks, rewards or perks. Ready-made CrazyVouchers vouchers for all 16 banners, plus a bundle, are in [`extras/vouchers`](extras/vouchers).
 
 To add your own, put PNG files in `plugins/squaremap-SimpleClans/icons/`. The file name is the icon name, so `castle.png` becomes `castle`. Run `/clanmap reload` and grant `simpleclans.map.icon.castle`. 32×32 pixel art looks best. Custom icons show as a painting in the menu; choose another item under `menu.items` in the config. A PNG named like a built-in banner (e.g. `banner_red.png`) replaces it. To change the kill icon, put a `kill.png` in the plugin folder.
 

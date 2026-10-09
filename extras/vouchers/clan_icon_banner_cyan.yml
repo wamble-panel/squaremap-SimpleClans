@@ -1,0 +1,47 @@
+voucher:
+  item: CYAN_BANNER
+  name: '#169C9C&l⚑ #A2D7D7Cyan Banner Icon'
+  lore:
+  - '&7ᴄʟᴀɴ ᴍᴀᴘ ɪᴄᴏɴ'
+  - '&fPuts a #169C9Ccyan banner&f on your'
+  - '&fclan home on the live map'
+  - ''
+  - '&8Clan leaders pick it with &7/clanmap icon'
+  - '#A2D7D7ʀɪɢʜᴛ-ᴄʟɪᴄᴋ ᴛᴏ ʀᴇᴅᴇᴇᴍ'
+  player: ''
+  glowing: true
+  options:
+    message: '{prefix}&7You Have Redeemed #169C9C&l⚑ #A2D7D7Cyan Banner Icon &f/clanmap icon to use it'
+    whitelist-worlds:
+      toggle: false
+      message: '{prefix}&cYou can not use that voucher here as you are not in a whitelisted world for this voucher.'
+      worlds:
+      - world
+      - world_nether
+      - world_the_end
+    permission:
+      whitelist-permission:
+        toggle: false
+        message: '{prefix}&cYou do not have permission to use that voucher.'
+        permissions:
+        - ''
+      blacklist-permission:
+        toggle: true
+        message: '{prefix}&cYou Already have redeemed this'
+        permissions:
+        - simpleclans.map.icon.banner_cyan
+    limiter:
+      toggle: false
+      amount: 1
+    two-step-authentication: true
+    sound:
+      toggle: true
+      pitch: 1.0
+      volume: 1.0
+      sounds:
+      - ui.toast.challenge_complete
+    firework:
+      toggle: true
+      colors: cyan, aqua
+  commands:
+  - lp user {player} permission set simpleclans.map.icon.banner_cyan true
