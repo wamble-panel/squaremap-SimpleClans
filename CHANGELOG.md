@@ -2,6 +2,9 @@
 
 ## 2.2.0 — nicer menu, hex colours everywhere
 
+### Fixes
+* 2.0.0 and 2.1.0 were accidentally compiled against Adventure 5, which squaremap-api 1.4 pulls in. On Paper 1.21 servers (Adventure 4) parts of the plugin that build chat or menu text could fail with `NoSuchMethodError`. The jar is now compiled against Adventure 4, which links on both, and CI runs the tests on each.
+
 ### Hex colours
 * In-game text now uses the same colour parser as the web map, so clan tags written as `&#RRGGBB`, `&x&R&R…`, `§x§R§R…`, `<#RRGGBB>` or `{#RRGGBB}` show their real colours in the menu instead of raw codes.
 * Map nameplates: colours too dark to read on the dark nameplate (`§0`, `§1`, `§4`, `§8`, dark hex) get a soft light glow. Brighter colours keep Minecraft's own drop shadow. The nameplate is a little darker for contrast.
