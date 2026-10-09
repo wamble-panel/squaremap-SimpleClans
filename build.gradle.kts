@@ -12,15 +12,17 @@ repositories {
     maven("https://repo.roinujnosde.me/releases/")
 }
 
+val paperApi = "io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT"
+
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    compileOnly(paperApi)
     compileOnly("xyz.jpenilla:squaremap-api:1.4.0")
     compileOnly("net.sacredlabyrinth.phaed.simpleclans:SimpleClans:2.19.2") {
         isTransitive = false
     }
 
-    testCompileOnly("org.jetbrains:annotations:26.0.2")
-    testImplementation("net.kyori:adventure-api:4.17.0")
+    // tests run against the same Adventure version the plugin is compiled with
+    testImplementation(paperApi)
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
