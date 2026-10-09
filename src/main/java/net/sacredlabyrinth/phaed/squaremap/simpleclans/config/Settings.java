@@ -1,8 +1,11 @@
 package net.sacredlabyrinth.phaed.squaremap.simpleclans.config;
 
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,7 +19,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /** Immutable, validated view of config.yml. Rebuilt on every reload. */
-public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands, Kills kills) {
+public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands, Kills kills, Menu menu) {
 
     public static final int CONFIG_VERSION = 2;
 
@@ -62,6 +65,14 @@ public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands,
                         DateTimeFormatter timeFormat, Set<KillType> types) {
     }
 
+    /** The /clanmap icon picker. Banner icons always show as their banner item. */
+    public record Menu(boolean showLocked, Material customIconItem, Map<String, Material> items) {
+
+        public @NotNull Material itemFor(@NotNull String icon) {
+            return items.getOrDefault(icon, customIconItem);
+        }
+    }
+
     // -- loading -----------------------------------------------------------
 
     public static @NotNull Settings load(@NotNull ConfigurationSection root, @NotNull Logger logger) {
@@ -79,7 +90,7 @@ public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands,
                 new Homes(
                         r.layer(homes, "Clan Homes", 20, 30),
                         clamp(homes.getInt("icon-size", 32), 8, 128),
-                        homes.getString("default-icon", "clanhome").toLowerCase(Locale.ROOT),
+                        homes.getString("default-icon", "banner_red").toLowerCase(Locale.ROOT),
                         lowerSet(homes.getStringList("hidden-clans"))),
                 new Lands(
                         r.layer(lands, "Clan Territory", 10, 300),
@@ -97,7 +108,8 @@ public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands,
                         clamp(kills.getInt("max-markers", 100), 1, 1000),
                         clamp(kills.getInt("icon-size", 16), 8, 128),
                         r.formatter(kills, "time-format", "HH:mm"),
-                        r.enumSet(kills, "types", KillType.class)));
+                        r.enumSet(kills, "types", KillType.class)),
+                r.menu(r.section(root, "menu")));
     }
 
     private static int clamp(int value, int min, int max) {
@@ -159,6 +171,37 @@ public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands,
                     s.getString("head-url", "https://mc-heads.net/avatar/{uuid}/16"),
                     formatter(s, "date-format", "d MMM yyyy"),
                     Map.copyOf(labels));
+        }
+
+        Menu menu(ConfigurationSection s) {
+            Map<String, Material> items = new HashMap<>();
+            ConfigurationSection itemSection = s.getConfigurationSection("items");
+            if (itemSection != null) {
+                for (String icon : itemSection.getKeys(false)) {
+                    Material material = material(itemSection, icon, null);
+                    if (material != null) {
+                        items.put(icon.toLowerCase(Locale.ROOT), material);
+                    }
+                }
+            }
+            return new Menu(s.getBoolean("show-locked", true),
+                    material(s, "custom-icon-item", Material.PAINTING),
+                    Map.copyOf(items));
+        }
+
+        @Contract("_, _, !null -> !null")
+        @Nullable Material material(ConfigurationSection s, String path, @Nullable Material def) {
+            String value = s.getString(path);
+            if (value == null) {
+                return def;
+            }
+            Material material = Material.matchMaterial(value);
+            if (material == null || !material.isItem() || material.isAir()) {
+                logger.warning("'" + value + "' at " + path + " isn't an item, using "
+                        + (def != null ? def.name() : "nothing") + ".");
+                return def;
+            }
+            return material;
         }
 
         DateTimeFormatter formatter(ConfigurationSection s, String path, String def) {

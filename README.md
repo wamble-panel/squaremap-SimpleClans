@@ -2,7 +2,7 @@
 
 Shows [SimpleClans](https://github.com/RoinujNosde/SimpleClans) on [squaremap](https://github.com/jpenilla/squaremap):
 
-- **Clan Homes**: an icon at every clan home. Hovering shows the clan's tag in its Minecraft colours and who's online. Clicking shows leaders, members, KDR, allies, rivals, wars and territory.
+- **Clan Homes**: a banner at every clan home, in the colour the clan's leader picks. Hovering shows the clan's tag in its Minecraft colours and who's online. Clicking shows leaders, members, KDR, allies, rivals, wars and territory.
 - **Clan Territory**: the clan's protected land (WorldGuard, GriefPrevention and the other plugins SimpleClans hooks into), coloured by clan tag.
 - **Recent Kills**: where PvP kills happened, labelled war / rival / ally / neutral / civilian, cleared after a few minutes.
 
@@ -27,7 +27,8 @@ Upgrading from 1.x? Your old config is kept as `config-v1.yml`, and icons in `im
 
 | Command | Who | |
 |---|---|---|
-| `/clanmap icon <name>` | clan leaders | Pick the clan's map icon (`reset` for the default) |
+| `/clanmap icon` | clan leaders | Open the icon picker |
+| `/clanmap icon <name>` | clan leaders | Pick an icon directly (`reset` for the default) |
 | `/clanmap icons` | everyone | List icons; click one to pick it |
 | `/clanmap hide` / `show` | clan leaders with `simpleclans.map.hide` | Hide the clan from the map |
 | `/clanmap reload` | `simpleclans.map.reload` | Reload the config |
@@ -40,14 +41,26 @@ Upgrading from 1.x? Your old config is kept as `config-v1.yml`, and icons in `im
 |---|---|---|
 | `simpleclans.map.seticon` | everyone | Use `/clanmap icon` (clan leaders only) |
 | `simpleclans.map.list` | everyone | Use `/clanmap icons` |
-| `simpleclans.map.icon.<name>` | `clanhome`: everyone | Use a particular icon |
+| `simpleclans.map.icon.banner_<color>` | nobody | Use that banner, e.g. `simpleclans.map.icon.banner_blue` |
+| `simpleclans.map.icon.banners` | nobody | Use all 16 banners |
+| `simpleclans.map.icon.<name>` | nobody | Use a custom icon |
 | `simpleclans.map.icon.bypass` | op | Use any icon |
 | `simpleclans.map.hide` | op | Use `/clanmap hide` and `show` |
 | `simpleclans.map.reload` | op | Use `/clanmap reload` |
 
-## Custom icons
+Every clan can always use the default icon (`banner_red` unless you change `default-icon`).
 
-Put PNG files in `plugins/squaremap-SimpleClans/icons/`. The file name is the icon name, so `castle.png` becomes `castle`. Run `/clanmap reload` and grant `simpleclans.map.icon.castle` to whoever may use it. 32×32 pixel art looks best. To change the kill icon, put a `kill.png` in the plugin folder.
+## Icons
+
+The plugin comes with a pixel-art banner in each of Minecraft's 16 dye colours:
+
+![The 16 banner icons](docs/banners.png)
+
+`banner_white`, `banner_light_gray`, `banner_gray`, `banner_black`, `banner_brown`, `banner_red`, `banner_orange`, `banner_yellow`, `banner_lime`, `banner_green`, `banner_cyan`, `banner_light_blue`, `banner_blue`, `banner_purple`, `banner_magenta`, `banner_pink`
+
+Clan leaders choose one with `/clanmap icon`. That opens a chest menu where each icon appears as the matching Minecraft banner. Locked icons are greyed out, and the menu also has a reset button and a show/hide toggle. Each icon needs its own permission, so you can sell them as ranks, rewards or perks.
+
+To add your own, put PNG files in `plugins/squaremap-SimpleClans/icons/`. The file name is the icon name, so `castle.png` becomes `castle`. Run `/clanmap reload` and grant `simpleclans.map.icon.castle`. 32×32 pixel art looks best. Custom icons show as a painting in the menu; choose another item under `menu.items` in the config. A PNG named like a built-in banner (e.g. `banner_red.png`) replaces it. To change the kill icon, put a `kill.png` in the plugin folder.
 
 ## Configuration
 

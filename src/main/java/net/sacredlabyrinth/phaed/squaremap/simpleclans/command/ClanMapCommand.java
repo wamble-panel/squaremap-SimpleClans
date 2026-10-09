@@ -18,8 +18,10 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.sacredlabyrinth.phaed.simpleclans.Clan;
 import net.sacredlabyrinth.phaed.simpleclans.ClanPlayer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.ClanFlags;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.Perms;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.SquaremapSimpleClans;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.config.Messages;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.menu.IconMenu;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -33,16 +35,15 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 
 /**
- * {@code /clanmap} (alias {@code /cmap}): icon, icons, hide, show, reload.
+ * {@code /clanmap} (alias {@code /cmap}): icon (opens the picker), icons, hide, show, reload.
  * Registered through Paper's Brigadier API, so players get proper tab completion.
  */
 public final class ClanMapCommand {
 
-    private static final String PERM_RELOAD = "simpleclans.map.reload";
-    private static final String PERM_LIST = "simpleclans.map.list";
-    private static final String PERM_ICON = "simpleclans.map.seticon";
-    private static final String PERM_ICON_BYPASS = "simpleclans.map.icon.bypass";
-    private static final String PERM_HIDE = "simpleclans.map.hide";
+    private static final String PERM_RELOAD = Perms.RELOAD;
+    private static final String PERM_LIST = Perms.LIST;
+    private static final String PERM_ICON = Perms.SET_ICON;
+    private static final String PERM_HIDE = Perms.HIDE;
 
     private final SquaremapSimpleClans plugin;
 
@@ -62,6 +63,7 @@ public final class ClanMapCommand {
                 .then(Commands.literal("help").executes(ctx -> help(sender(ctx))))
                 .then(Commands.literal("icon")
                         .requires(permission(PERM_ICON))
+                        .executes(ctx -> openMenu(sender(ctx)))
                         .then(Commands.literal("reset").executes(ctx -> setIcon(sender(ctx), null)))
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .suggests(this::suggestIcons)
@@ -101,6 +103,19 @@ public final class ClanMapCommand {
         return Command.SINGLE_SUCCESS;
     }
 
+    private int openMenu(CommandSender sender) {
+        Clan clan = leaderClan(sender);
+        if (clan == null) {
+            return Command.SINGLE_SUCCESS;
+        }
+        if (plugin.homes() == null) {
+            plugin.messages().send(sender, "layer-disabled");
+            return Command.SINGLE_SUCCESS;
+        }
+        IconMenu.open(plugin, (Player) sender, clan);
+        return Command.SINGLE_SUCCESS;
+    }
+
     private int setIcon(CommandSender sender, @Nullable String requested) {
         Messages messages = plugin.messages();
         Clan clan = leaderClan(sender);
@@ -118,11 +133,11 @@ public final class ClanMapCommand {
             return Command.SINGLE_SUCCESS;
         }
 
-        String icon = requested.toLowerCase(Locale.ROOT);
-        if (!plugin.icons().has(icon)) {
-            messages.send(sender, "icon-not-found", Placeholder.unparsed("icon", icon));
+        if (!plugin.icons().has(requested)) {
+            messages.send(sender, "icon-not-found", Placeholder.unparsed("icon", requested.toLowerCase(Locale.ROOT)));
             return Command.SINGLE_SUCCESS;
         }
+        String icon = plugin.icons().effective(requested);
         if (!canUse(sender, icon)) {
             messages.send(sender, "no-permission");
             return Command.SINGLE_SUCCESS;
@@ -200,8 +215,8 @@ public final class ClanMapCommand {
         return clan;
     }
 
-    private static boolean canUse(CommandSender sender, String icon) {
-        return sender.hasPermission(PERM_ICON_BYPASS) || sender.hasPermission("simpleclans.map.icon." + icon);
+    private boolean canUse(CommandSender sender, String icon) {
+        return Perms.canUseIcon(sender, plugin.icons(), icon);
     }
 
     private CompletableFuture<Suggestions> suggestIcons(CommandContext<CommandSourceStack> ctx,

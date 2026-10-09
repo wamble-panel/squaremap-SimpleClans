@@ -12,6 +12,7 @@ import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.LandsLayer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.MapLayer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.listener.ClanListener;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.listener.DiplomacyListener;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.menu.MenuListener;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.render.Tooltips;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -57,6 +58,7 @@ public final class SquaremapSimpleClans extends JavaPlugin {
         load();
 
         getServer().getPluginManager().registerEvents(new ClanListener(this), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(), this);
         try {
             getServer().getPluginManager().registerEvents(new DiplomacyListener(this), this);
         } catch (LinkageError error) {
@@ -110,6 +112,7 @@ public final class SquaremapSimpleClans extends JavaPlugin {
     }
 
     private void unload() {
+        MenuListener.closeAll(this);
         if (pendingRefresh != null) {
             pendingRefresh.cancel();
             pendingRefresh = null;
@@ -223,6 +226,10 @@ public final class SquaremapSimpleClans extends JavaPlugin {
 
     public @NotNull Squaremap squaremap() {
         return squaremap;
+    }
+
+    public @NotNull Settings settings() {
+        return settings;
     }
 
     public @NotNull Messages messages() {

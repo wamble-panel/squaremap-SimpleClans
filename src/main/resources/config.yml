@@ -70,9 +70,13 @@ layers:
     hidden-worlds: []
     # Icon size on the map, in pixels.
     icon-size: 32
-    # Icon clans get until a leader picks one with /clanmap icon. Icons are the PNG files in
-    # plugins/squaremap-SimpleClans/icons/; the file name without .png is the icon's name.
-    default-icon: "clanhome"
+    # Icon clans get until a leader picks another. Built in: one banner per dye colour
+    #   banner_white, banner_light_gray, banner_gray, banner_black, banner_brown, banner_red,
+    #   banner_orange, banner_yellow, banner_lime, banner_green, banner_cyan, banner_light_blue,
+    #   banner_blue, banner_purple, banner_magenta, banner_pink
+    # Add your own by putting PNGs in plugins/squaremap-SimpleClans/icons/ (file name = icon name).
+    # Each icon needs simpleclans.map.icon.<name>; the default icon is free for everyone.
+    default-icon: "banner_red"
     # Clan tags that never appear. Leaders can also hide their own clan with /clanmap hide.
     hidden-clans: []
 
@@ -119,6 +123,17 @@ layers:
     types: [civilian, neutral, rival, ally, war]
     # The kill icon can be replaced by putting a kill.png in the plugin folder.
 
+# The icon picker clan leaders open with /clanmap icon.
+menu:
+  # Also list icons the player hasn't unlocked (shown greyed out with a lock), so they know what exists.
+  show-locked: true
+  # Banner icons show as the banner of the same colour. Custom icons show as this item...
+  custom-icon-item: PAINTING
+  # ...unless you pick one here, by icon name. Works for banners too.
+  items: {}
+  #   castle: STONE_BRICKS
+  #   dragon: DRAGON_HEAD
+
 # Chat messages, in MiniMessage format: https://docs.advntr.dev/minimessage/format
 # <prefix> inserts the prefix. Set a message to "" to send nothing.
 messages:
@@ -140,7 +155,28 @@ messages:
   clan-shown: "<prefix><green>Your clan is visible on the map again."
   help:
     header: "<prefix><gray>squaremap-SimpleClans commands:"
-    icon: "<gray> • <aqua>/clanmap icon [name|reset]</aqua> <dark_gray>-</dark_gray> pick your clan's map icon"
+    icon: "<gray> • <aqua>/clanmap icon</aqua> <dark_gray>-</dark_gray> open the icon picker <dark_gray>(or <aqua>/clanmap icon [name|reset]</aqua>)"
     icons: "<gray> • <aqua>/clanmap icons</aqua> <dark_gray>-</dark_gray> list icons"
     hide: "<gray> • <aqua>/clanmap hide</aqua> / <aqua>show</aqua> <dark_gray>-</dark_gray> hide your clan from the map"
     reload: "<gray> • <aqua>/clanmap reload</aqua> <dark_gray>-</dark_gray> reload the config"
+  menu:
+    title: "<dark_gray>Clan Map Icon"
+    info-icon: "<gray>Icon: <icon>"
+    info-shown: "<green>● Shown on the map"
+    info-hidden: "<red>● Hidden from the map"
+    icon-selected: "<green>✔ Your clan's icon"
+    icon-available: "<yellow>▸ Click to use"
+    icon-locked: "<red>✖ Locked"
+    icon-default: "<dark_gray>Default icon"
+    selected-feedback: "<green>Your clan's map icon is now <icon><green>."
+    locked-feedback: "<red>You haven't unlocked <icon><red> yet."
+    reset: "<yellow>Reset icon"
+    reset-lore: "<gray>Go back to <icon>"
+    shown: "<green>Shown on the map"
+    hidden: "<red>Hidden from the map"
+    click-to-hide: "<gray>Click to hide your clan"
+    click-to-show: "<gray>Click to show your clan"
+    previous: "<yellow>← Previous page"
+    next: "<yellow>Next page →"
+    page: "<gray>Page <page> of <pages>"
+    close: "<red>Close"

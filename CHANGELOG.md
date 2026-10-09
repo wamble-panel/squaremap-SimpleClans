@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0 — banners and icon picker
+
+* 16 pixel-art banner icons, one per Minecraft dye colour (`banner_white` … `banner_pink`). The red banner is the new default.
+* `/clanmap icon` opens a chest menu for clan leaders. Each icon shows as the matching Minecraft banner, the current one glows, and locked ones are greyed out. Includes reset, show/hide on the map, pages for large icon sets, and loom sounds.
+* Each banner has its own permission (`simpleclans.map.icon.banner_<color>`), and `simpleclans.map.icon.banners` grants all of them. The default icon is always free.
+* Built-in icons load from the jar. A PNG in `icons/` with the same name replaces one.
+* Clans that used 2.0.0's `clanhome` icon now show the red banner.
+* New `menu` config section: show or hide locked icons, and choose the item used for custom icons.
+
 ## 2.0.0 — squaremap rebuild
 
 Rewritten from scratch for squaremap, Paper 1.21+ and Java 21.
