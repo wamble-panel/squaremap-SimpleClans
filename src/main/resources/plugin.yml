@@ -4,7 +4,7 @@ main: net.sacredlabyrinth.phaed.squaremap.simpleclans.SquaremapSimpleClans
 description: '${description}'
 website: https://github.com/wamble-panel/squaremap-SimpleClans
 authors: [phaed, RoinujNosde, Minat0_]
-api-version: '1.21'
+api-version: '26.3'
 depend: [squaremap, SimpleClans]
 
 # Commands are registered through Paper's Brigadier API (see ClanMapCommand).

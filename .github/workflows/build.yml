@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       # Caches Gradle and checks the wrapper jar is genuine
       - uses: gradle/actions/setup-gradle@v5

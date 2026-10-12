@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0 — Minecraft 26.3
+
+* Built for Paper 26.3 (`api-version: '26.3'`) on Java 25, the Java version Minecraft 26.x requires.
+* Compiled against the Adventure 5 text library that Paper 26.3 ships, replacing the Adventure 4 workaround from 2.2.0.
+* Build moved to Gradle 9.8.1. GitHub Actions builds on Java 25.
+* No feature or config changes. Configs, icons, permissions and vouchers from 2.x work as they are.
+* Older servers (Paper 1.21.x) should stay on 2.2.0.
+
 ## 2.2.0 — nicer menu, hex colours everywhere
 
 ### Fixes

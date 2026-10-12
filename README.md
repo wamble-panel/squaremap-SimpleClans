@@ -10,9 +10,9 @@ Shows [SimpleClans](https://github.com/RoinujNosde/SimpleClans) on [squaremap](h
 
 | | Version |
 |---|---|
-| Server | Paper 1.21 or newer (or a fork such as Purpur) |
-| Java | 21 |
-| squaremap | 1.3 or newer |
+| Server | Paper 26.3 (or a fork such as Purpur) |
+| Java | 25 |
+| squaremap | 1.4 or newer |
 | SimpleClans | 2.18 or newer |
 
 ## Install
