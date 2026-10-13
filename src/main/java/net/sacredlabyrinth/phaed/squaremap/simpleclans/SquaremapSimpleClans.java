@@ -9,6 +9,7 @@ import net.sacredlabyrinth.phaed.squaremap.simpleclans.config.Settings;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.HomesLayer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.KillsLayer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.LandsLayer;
+import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.LayerRenamer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.layer.MapLayer;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.listener.ClanListener;
 import net.sacredlabyrinth.phaed.squaremap.simpleclans.listener.DiplomacyListener;
@@ -45,6 +46,7 @@ public final class SquaremapSimpleClans extends JavaPlugin {
     private @Nullable LandsLayer lands;
     private @Nullable KillsLayer kills;
     private @Nullable BukkitTask pendingRefresh;
+    private @Nullable LayerRenamer renamer;
     private boolean pendingLands;
 
     @Override
@@ -98,6 +100,9 @@ public final class SquaremapSimpleClans extends JavaPlugin {
         if (settings.kills().layer().enabled()) {
             kills = enable(new KillsLayer(this, settings.kills()));
         }
+
+        renamer = new LayerRenamer(this, settings.renameLayers());
+        renamer.enable();
     }
 
     private <T extends MapLayer> @Nullable T enable(T layer) {
@@ -116,6 +121,10 @@ public final class SquaremapSimpleClans extends JavaPlugin {
         if (pendingRefresh != null) {
             pendingRefresh.cancel();
             pendingRefresh = null;
+        }
+        if (renamer != null) {
+            renamer.disable();
+            renamer = null;
         }
         layers().forEach(MapLayer::disable);
         homes = null;
@@ -177,6 +186,9 @@ public final class SquaremapSimpleClans extends JavaPlugin {
             for (MapLayer layer : layers()) {
                 layer.attach(world);
                 layer.refresh();
+            }
+            if (renamer != null) {
+                renamer.apply();
             }
         });
     }

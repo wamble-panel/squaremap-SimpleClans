@@ -70,6 +70,7 @@ Every option is explained in [`config.yml`](src/main/resources/config.yml). The 
 - `layers.*.update-interval-seconds`: how often each layer redraws. Homes, tags, membership and diplomacy changes also show straight away.
 - `layers.lands.territory-owners`: count only leaders' claims (`leaders`) or every member's (`members`).
 - `layers.kills.types`: which kinds of kill appear.
+- `rename-layers`: rename layers that other plugins add to squaremap's layer list, e.g. `HuskClaims: "Claims"` (the default).
 - `messages`: every chat message, in [MiniMessage](https://docs.advntr.dev/minimessage/format) format.
 
 ## Building

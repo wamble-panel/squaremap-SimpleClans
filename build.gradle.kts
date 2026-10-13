@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "net.sacredlabyrinth.phaed.squaremap.simpleclans"
-version = "3.0.0"
+version = "3.1.0"
 description = "Shows SimpleClans homes, territory and kills on squaremap"
 
 repositories {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.1.0 — rename other plugins' layers
+
+* New `rename-layers` config section that renames layers other plugins add to squaremap's layer list, matched by current name or layer key. It ships with `HuskClaims: "Claims"`, so a claims addon's "HuskClaims" layer shows up as "Claims".
+* The other plugin keeps updating its own markers as normal. Its original layer is restored when this plugin disables or reloads. Renames are rechecked every 30 seconds and when a world loads, so layers registered late or re-registered after a reload are caught.
+* Configs from before 3.1.0 get the default rename without any edits. Set `rename-layers: {}` to turn it off.
+
 ## 3.0.0 — Minecraft 26.3
 
 * Built for Paper 26.3 (`api-version: '26.3'`) on Java 25, the Java version Minecraft 26.x requires.

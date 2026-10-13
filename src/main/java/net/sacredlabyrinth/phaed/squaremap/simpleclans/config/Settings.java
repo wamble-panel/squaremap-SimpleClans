@@ -19,7 +19,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /** Immutable, validated view of config.yml. Rebuilt on every reload. */
-public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands, Kills kills, Menu menu) {
+public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands, Kills kills, Menu menu,
+                       Map<String, String> renameLayers) {
 
     public static final int CONFIG_VERSION = 2;
 
@@ -109,7 +110,20 @@ public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands,
                         clamp(kills.getInt("icon-size", 16), 8, 128),
                         r.formatter(kills, "time-format", "HH:mm"),
                         r.enumSet(kills, "types", KillType.class)),
-                r.menu(r.section(root, "menu")));
+                r.menu(r.section(root, "menu")),
+                r.renames(renameSection(root, r)));
+    }
+
+    /**
+     * The user's rename-layers section, or the bundled default when their config predates it.
+     * Bukkit doesn't list default-only keys, so read the defaults directly; an explicit empty
+     * section in the user's config still means "rename nothing".
+     */
+    private static ConfigurationSection renameSection(ConfigurationSection root, Reader r) {
+        if (root.contains("rename-layers", true) || root.getDefaultSection() == null) {
+            return r.section(root, "rename-layers");
+        }
+        return r.section(root.getDefaultSection(), "rename-layers");
     }
 
     private static int clamp(int value, int min, int max) {
@@ -171,6 +185,18 @@ public record Settings(boolean debug, Tooltip tooltip, Homes homes, Lands lands,
                     s.getString("head-url", "https://mc-heads.net/avatar/{uuid}/16"),
                     formatter(s, "date-format", "d MMM yyyy"),
                     Map.copyOf(labels));
+        }
+
+        /** Other plugins' squaremap layers to rename: current name (or layer key) to new name. */
+        Map<String, String> renames(ConfigurationSection s) {
+            Map<String, String> out = new HashMap<>();
+            for (String from : s.getKeys(false)) {
+                String to = s.getString(from);
+                if (to != null && !to.isBlank()) {
+                    out.put(from, to);
+                }
+            }
+            return Map.copyOf(out);
         }
 
         Menu menu(ConfigurationSection s) {

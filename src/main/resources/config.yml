@@ -134,6 +134,12 @@ menu:
   #   castle: STONE_BRICKS
   #   dragon: DRAGON_HEAD
 
+# Rename layers that OTHER plugins add to squaremap's layer list, e.g. a claims addon that
+# calls its layer "HuskClaims". Left side: the layer's current name (or its layer key);
+# right side: the name you want. The other plugin keeps working as normal.
+rename-layers:
+  HuskClaims: "Claims"
+
 # Chat and menu text, in MiniMessage format: https://docs.advntr.dev/minimessage/format
 # Hex colours (<#RRGGBB>) and gradients (<gradient:#FFD166:#F28C38>...</gradient>) work everywhere.
 # <prefix> inserts the prefix. Set a message to "" to send nothing.
